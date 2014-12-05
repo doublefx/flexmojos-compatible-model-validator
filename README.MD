@@ -31,7 +31,7 @@ or insert this auto activated profile in your pom to auto install it, if the ext
     <id>prepare-maven-extended-libs</id>
     <activation>
         <file>
-            <missing>${maven.home}/lib/ext/flexmojos-compatible-model-validator.jar</missing>
+            <missing>${env.MAVEN_HOME}/lib/ext/flexmojos-compatible-model-validator.jar</missing>
         </file>
     </activation>
     <build>
