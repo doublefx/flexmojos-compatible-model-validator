@@ -56,12 +56,11 @@ or insert this auto activated profile in your pom to auto install it, if the ext
                                     <type>jar</type>
                                     <overWrite>true</overWrite>
                                     <outputDirectory>${env.MAVEN_HOME}/lib/ext</outputDirectory>
+                                    <destFileName>flexmojos-compatible-model-validator.jar</destFileName>
                                 </artifactItem>
                             </artifactItems>
-                            <outputDirectory>${project.build.directory}/wars</outputDirectory>
                             <overWriteReleases>true</overWriteReleases>
                             <overWriteSnapshots>true</overWriteSnapshots>
-                            <destFileName>flexmojos-compatible-model-validator.jar</destFileName>
                         </configuration>
                     </execution>
                 </executions>
