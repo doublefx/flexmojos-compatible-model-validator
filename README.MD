@@ -1,11 +1,18 @@
 FlexMojos Compatible Model Validator.
+==========
 
 FlexMojos provides 4 scopes used as linkages for your dependencies:
 
-Merged Into Code. This bundles in all classes from the library that are used in the project. It corresponds to the library-path option of mxmlc and compc .
-External. This compiles the SWF or SWC against the classes from the library for linkage but does not add them into the resulting file. It corresponds to the external-library-path compiler option.
-Internal. This compiles all the libraries used into the final SWF, It corresponds to the MXMLC option -include-libraries [library] [...] (a repeatable list of libraries (SWCs) to completely include in the SWF).
-Runtime Shared Library. Relevant only for Flex and AIR Applications (not SWCs or ActionScript 3 projects), this ensures that the library referenced by the SWF will be loaded once into the user's Flash Player cache at runtime. This is enabled by default on Flex projects for the framework dependencies (you can use static-link-runtime-shared-libraries on mxmlc to disable it).
+<dl>
+<dt><strong>Merged Into Code.</strong></dt>
+<dd>This bundles in all classes from the library that are used in the project. It corresponds to the library-path option of mxmlc and compc.</dd>
+<dt><strong>External.</strong></dt>
+<dd>This compiles the SWF or SWC against the classes from the library for linkage but does not add them into the resulting file. It corresponds to the external-library-path compiler option.</dd>
+<dt><strong>Internal.</strong></dt>
+<dd>This compiles all the libraries used into the final SWF, It corresponds to the mxmlc option -include-libraries [library] [...] (a repeatable list of libraries (SWCs) to completely include in the SWF).</dd>
+<dt><strong>Runtime Shared Library.</strong></dt>
+<dd>Relevant only for Flex and AIR Applications (not SWCs or ActionScript 3 projects), this ensures that the library referenced by the SWF will be loaded once into the user's Flash Player cache at runtime. This is enabled by default on Flex projects for the framework dependencies (you can use static-link-runtime-shared-libraries on mxmlc to disable it).</dd>
+</dl>
 
 Unfortunately Maven doesn't not support those scopes by default, generating warnings at build time.
 
@@ -15,6 +22,7 @@ To use it, place the generated jar-file to ${MAVEN_HOME}/lib/ext
 
 or insert this auto activated profile in your pom to auto include it in ${MAVEN_HOME}/lib/ext, if the extension is not present, it will install it from your repository:
 
+```
 <profile>
     <id>prepare-maven-extended-libs</id>
     <activation>
@@ -75,3 +83,4 @@ or insert this auto activated profile in your pom to auto include it in ${MAVEN_
         </plugins>
     </build>
 </profile>
+```
