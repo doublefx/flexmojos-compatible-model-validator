@@ -22,9 +22,9 @@ Unfortunately Maven doesn't not support those scopes by default, generating warn
 
 This Maven extension enhances the default Maven model validation to allow those scopes.
 
-To use it, place the generated jar-file to ${MAVEN_HOME}/lib/ext
+To use it, place the generated jar-file into ${MAVEN_HOME}/lib/ext
 
-or insert this auto activated profile in your pom to auto include it in ${MAVEN_HOME}/lib/ext, if the extension is not present, it will install it from your repository:
+or insert this auto activated profile in your pom to auto install it, if the extension is not present, it will install it from your repository:
 
 ```
 <profile>
