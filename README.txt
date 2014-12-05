@@ -1,4 +1,5 @@
-Library linkage
+FlexMojos Compatible Model Validator.
+
 FlexMojos provides 4 scopes used as linkages for your dependencies:
 
 Merged Into Code. This bundles in all classes from the library that are used in the project. It corresponds to the library-path option of mxmlc and compc .
