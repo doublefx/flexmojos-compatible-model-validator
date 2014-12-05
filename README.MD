@@ -18,7 +18,7 @@ FlexMojos provides 6 scopes used as linkages for your dependencies:
 <dd>To indicate that dependency is a theme.</dd>
 </dl>
 
-Unfortunately Maven doesn't not support those scopes by default, generating warnings at build time.
+Unfortunately Maven doesn't support those scopes by default, generating warnings at build time.
 
 This Maven extension enhances the default Maven model validation to allow those scopes.
 

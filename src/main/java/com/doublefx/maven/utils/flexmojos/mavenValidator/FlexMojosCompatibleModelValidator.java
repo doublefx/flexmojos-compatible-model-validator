@@ -33,103 +33,139 @@ import java.util.*;
 @Component(role = ModelValidator.class)
 public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
 
+    private static final String ID_REGEX = "[A-Za-z0-9_\\-.]+";
+    private static final String ILLEGAL_FS_CHARS = "\\/:\"<>|?*";
+    private static final String ILLEGAL_VERSION_CHARS = ILLEGAL_FS_CHARS;
+
     @Override
-    public void validateEffectiveModel(Model model, ModelBuildingRequest request, ModelProblemCollector problems) {
-        this.validateStringNotEmpty("modelVersion", problems, Severity.ERROR, model.getModelVersion(), model);
-        this.validateId("groupId", problems, model.getGroupId(), model);
-        this.validateId("artifactId", problems, model.getArtifactId(), model);
-        this.validateStringNotEmpty("packaging", problems, Severity.ERROR, model.getPackaging(), model);
-        if (!model.getModules().isEmpty()) {
-            if (!"pom".equals(model.getPackaging())) {
-                addViolation(problems, Severity.ERROR, "packaging", null, "with value \'" + model.getPackaging() + "\' is invalid. Aggregator projects " + "require \'pom\' as packaging.", model);
+    public void validateEffectiveModel( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
+    {
+        validateStringNotEmpty("modelVersion", problems, Severity.ERROR, model.getModelVersion(), model);
+
+        validateId("groupId", problems, model.getGroupId(), model);
+
+        validateId("artifactId", problems, model.getArtifactId(), model);
+
+        validateStringNotEmpty("packaging", problems, Severity.ERROR, model.getPackaging(), model);
+
+        if ( !model.getModules().isEmpty() )
+        {
+            if ( !"pom".equals( model.getPackaging() ) )
+            {
+                addViolation( problems, Severity.ERROR, "packaging", null, "with value '" + model.getPackaging()
+                        + "' is invalid. Aggregator projects " + "require 'pom' as packaging.", model );
             }
 
-            int errOn30 = 0;
-
-            for (int mgmt = model.getModules().size(); errOn30 < mgmt; ++errOn30) {
-                String modules = model.getModules().get(errOn30);
-                if (StringUtils.isBlank(modules)) {
-                    addViolation(problems, Severity.WARNING, "modules.module[" + errOn30 + "]", null, "has been specified without a path to the project directory.", model.getLocation("modules"));
+            for ( int i = 0, n = model.getModules().size(); i < n; i++ )
+            {
+                String module = model.getModules().get( i );
+                if ( StringUtils.isBlank( module ) )
+                {
+                    addViolation( problems, Severity.WARNING, "modules.module[" + i + "]", null,
+                            "has been specified without a path to the project directory.",
+                            model.getLocation( "modules" ) );
                 }
             }
         }
 
-        this.validateStringNotEmpty("version", problems, Severity.ERROR, model.getVersion(), model);
-        Severity var12 = getSeverity(request, 30);
-        this.validateEffectiveDependencies(problems, model.getDependencies(), false, request);
-        DependencyManagement var13 = model.getDependencyManagement();
-        if (var13 != null) {
-            this.validateEffectiveDependencies(problems, var13.getDependencies(), true, request);
+        validateStringNotEmpty("version", problems, Severity.ERROR, model.getVersion(), model);
+
+        Severity errOn30 = getSeverity( request, ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_3_0 );
+
+        validateEffectiveDependencies(problems, model.getDependencies(), false, request);
+
+        DependencyManagement mgmt = model.getDependencyManagement();
+        if ( mgmt != null )
+        {
+            validateEffectiveDependencies(problems, mgmt.getDependencies(), true, request);
         }
 
-        if (request.getValidationLevel() >= 20) {
-            HashSet<String> var14 = new HashSet<String>();
-            int errOn31 = 0;
-
-            for (int build = model.getModules().size(); errOn31 < build; ++errOn31) {
-                String reporting = model.getModules().get(errOn31);
-                if (!var14.add(reporting)) {
-                    addViolation(problems, Severity.ERROR, "modules.module[" + errOn31 + "]", null, "specifies duplicate child module " + reporting, model.getLocation("modules"));
+        if ( request.getValidationLevel() >= ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_2_0 )
+        {
+            Set<String> modules = new HashSet<String>();
+            for ( int i = 0, n = model.getModules().size(); i < n; i++ )
+            {
+                String module = model.getModules().get( i );
+                if ( !modules.add( module ) )
+                {
+                    addViolation( problems, Severity.ERROR, "modules.module[" + i + "]", null,
+                            "specifies duplicate child module " + module, model.getLocation( "modules" ) );
                 }
             }
 
-            Severity var15 = getSeverity(request, 31);
-            this.validateBannedCharacters("version", problems, var15, model.getVersion(), null, model, "\\/:\"<>|?*");
-            Build var16 = model.getBuild();
-            if (var16 != null) {
+            Severity errOn31 = getSeverity( request, ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_3_1 );
 
-                for (Plugin distMgmt : var16.getPlugins()) {
-                    this.validateStringNotEmpty("build.plugins.plugin.artifactId", problems, Severity.ERROR, distMgmt.getArtifactId(), distMgmt);
-                    this.validateStringNotEmpty("build.plugins.plugin.groupId", problems, Severity.ERROR, distMgmt.getGroupId(), distMgmt);
-                    this.validatePluginVersion("build.plugins.plugin.version", problems, distMgmt.getVersion(), distMgmt.getKey(), distMgmt, request);
-                    this.validateBoolean("build.plugins.plugin.inherited", problems, var12, distMgmt.getInherited(), distMgmt.getKey(), distMgmt);
-                    this.validateBoolean("build.plugins.plugin.extensions", problems, var12, distMgmt.getExtensions(), distMgmt.getKey(), distMgmt);
-                    this.validateEffectivePluginDependencies(problems, distMgmt, request);
+            validateBannedCharacters( "version", problems, errOn31, model.getVersion(), null, model,
+                    ILLEGAL_VERSION_CHARS );
+
+            Build build = model.getBuild();
+            if ( build != null )
+            {
+                for ( Plugin p : build.getPlugins() )
+                {
+                    validateStringNotEmpty( "build.plugins.plugin.artifactId", problems, Severity.ERROR,
+                            p.getArtifactId(), p );
+
+                    validateStringNotEmpty( "build.plugins.plugin.groupId", problems, Severity.ERROR, p.getGroupId(),
+                            p );
+
+                    validatePluginVersion( "build.plugins.plugin.version", problems, p.getVersion(), p.getKey(), p,
+                            request );
+
+                    validateBoolean( "build.plugins.plugin.inherited", problems, errOn30, p.getInherited(), p.getKey(),
+                            p );
+
+                    validateBoolean( "build.plugins.plugin.extensions", problems, errOn30, p.getExtensions(),
+                            p.getKey(), p );
+
+                    validateEffectivePluginDependencies( problems, p, request );
                 }
 
-                this.validateResources(problems, var16.getResources(), "build.resources.resource", request);
-                this.validateResources(problems, var16.getTestResources(), "build.testResources.testResource", request);
+                validateResources( problems, build.getResources(), "build.resources.resource", request );
+
+                validateResources( problems, build.getTestResources(), "build.testResources.testResource", request );
             }
 
-            Reporting var18 = model.getReporting();
-            Iterator var19;
-            if (var18 != null) {
-                var19 = var18.getPlugins().iterator();
+            Reporting reporting = model.getReporting();
+            if ( reporting != null )
+            {
+                for ( ReportPlugin p : reporting.getPlugins() )
+                {
+                    validateStringNotEmpty( "reporting.plugins.plugin.artifactId", problems, Severity.ERROR,
+                            p.getArtifactId(), p );
 
-                while (var19.hasNext()) {
-                    ReportPlugin repository = (ReportPlugin) var19.next();
-                    this.validateStringNotEmpty("reporting.plugins.plugin.artifactId", problems, Severity.ERROR, repository.getArtifactId(), repository);
-                    this.validateStringNotEmpty("reporting.plugins.plugin.groupId", problems, Severity.ERROR, repository.getGroupId(), repository);
-                    this.validateStringNotEmpty("reporting.plugins.plugin.version", problems, var15, repository.getVersion(), repository.getKey(), repository);
+                    validateStringNotEmpty( "reporting.plugins.plugin.groupId", problems, Severity.ERROR,
+                            p.getGroupId(), p );
+
+                    validateStringNotEmpty( "reporting.plugins.plugin.version", problems, errOn31, p.getVersion(),
+                            p.getKey(), p );
                 }
             }
 
-            var19 = model.getRepositories().iterator();
-
-            Repository var20;
-            while (var19.hasNext()) {
-                var20 = (Repository) var19.next();
-                this.validateRepository(problems, var20, "repositories.repository", request);
+            for ( Repository repository : model.getRepositories() )
+            {
+                validateRepository( problems, repository, "repositories.repository", request );
             }
 
-            var19 = model.getPluginRepositories().iterator();
-
-            while (var19.hasNext()) {
-                var20 = (Repository) var19.next();
-                this.validateRepository(problems, var20, "pluginRepositories.pluginRepository", request);
+            for ( Repository repository : model.getPluginRepositories() )
+            {
+                validateRepository( problems, repository, "pluginRepositories.pluginRepository", request );
             }
 
-            DistributionManagement var21 = model.getDistributionManagement();
-            if (var21 != null) {
-                if (var21.getStatus() != null) {
-                    addViolation(problems, Severity.ERROR, "distributionManagement.status", null, "must not be specified.", var21);
+            DistributionManagement distMgmt = model.getDistributionManagement();
+            if ( distMgmt != null )
+            {
+                if ( distMgmt.getStatus() != null )
+                {
+                    addViolation( problems, Severity.ERROR, "distributionManagement.status", null,
+                            "must not be specified.", distMgmt );
                 }
 
-                this.validateRepository(problems, var21.getRepository(), "distributionManagement.repository", request);
-                this.validateRepository(problems, var21.getSnapshotRepository(), "distributionManagement.snapshotRepository", request);
+                validateRepository(problems, distMgmt.getRepository(), "distributionManagement.repository", request);
+                validateRepository(problems, distMgmt.getSnapshotRepository(),
+                        "distributionManagement.snapshotRepository", request);
             }
         }
-
     }
 
     private void validateEffectiveDependencies(ModelProblemCollector problems, List<Dependency> dependencies, boolean management, ModelBuildingRequest request) {
@@ -238,7 +274,7 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
         if (!this.validateStringNotEmpty(fieldName, problems, severity, id, sourceHint, tracker)) {
             return false;
         } else {
-            boolean match = id.matches("[A-Za-z0-9_\\-.]+");
+            boolean match = id.matches(ID_REGEX);
             if (!match) {
                 addViolation(problems, severity, fieldName, sourceHint, "with value \'" + id + "\' does not match a valid id pattern.", tracker);
             }
