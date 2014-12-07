@@ -22,68 +22,16 @@ Unfortunately Maven doesn't support those scopes by default, generating warnings
 
 This Maven extension enhances the default Maven model validation to allow those scopes.
 
-To use it, place the generated jar-file into ${MAVEN_HOME}/lib/ext
-
-or insert this auto activated profile in your pom to auto install it, if the extension is not present, it will install it from your repository:
+To use it, place the generated jar-file into ${MAVEN_HOME}/lib/ext or add this extension to your parent project pom, it will fail at the first build time and then run normally.
 
 ```
-<profile>
-    <id>prepare-maven-extended-libs</id>
-    <activation>
-        <file>
-            <missing>${env.MAVEN_HOME}/lib/ext/flexmojos-compatible-model-validator.jar</missing>
-        </file>
-    </activation>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <version>2.8</version>
-                <executions>
-                    <execution>
-                        <id>copy</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>copy</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>com.doublefx.maven.utils.flexmojos</groupId>
-                                    <artifactId>flexmojos-compatible-model-validator</artifactId>
-                                    <version>1.0.0-SNAPSHOT</version>
-                                    <type>jar</type>
-                                    <overWrite>true</overWrite>
-                                    <outputDirectory>${env.MAVEN_HOME}/lib/ext</outputDirectory>
-                                    <destFileName>flexmojos-compatible-model-validator.jar</destFileName>
-                                </artifactItem>
-                            </artifactItems>
-                            <overWriteReleases>true</overWriteReleases>
-                            <overWriteSnapshots>true</overWriteSnapshots>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.gmaven</groupId>
-                <artifactId>gmaven-plugin</artifactId>
-                <version>1.4</version>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>execute</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <source>
-                        fail("FlexMojos Compatible Model Validator extension is now configured. Please restart the build, and then it will be successful.")
-                    </source>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-</profile>
+<build>
+    <extensions>
+        <extension>
+            <groupId>com.doublefx.maven.utils.flexmojos</groupId>
+            <artifactId>flexmojos-compatible-model-validator</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </extension>
+    </extensions>
+    ...
 ```
