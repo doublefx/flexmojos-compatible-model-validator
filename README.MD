@@ -22,7 +22,7 @@ Unfortunately Maven doesn't support those scopes by default, generating warnings
 
 This Maven extension enhances the default Maven model validation to allow those scopes.
 
-To use it, place the generated jar-file whithout the version number into ${MAVEN_HOME}/lib/ext or add this extension to your parent project pom, it will fail at the first build time and then run normally.
+To use it, place the generated jar-file whitout the version number into ${MAVEN_HOME}/lib/ext or add this extension to your parent project pom, it will fail at the first build and then run normally.
 
 ```
 <build>
