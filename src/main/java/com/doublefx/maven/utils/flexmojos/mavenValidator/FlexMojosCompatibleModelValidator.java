@@ -36,6 +36,7 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
     private static final String ID_REGEX = "[A-Za-z0-9_\\-.]+";
     private static final String ILLEGAL_FS_CHARS = "\\/:\"<>|?*";
     private static final String ILLEGAL_VERSION_CHARS = ILLEGAL_FS_CHARS;
+    private static final String ILLEGAL_REPO_ID_CHARS = ILLEGAL_FS_CHARS;
 
     @Override
     public void validateEffectiveModel( Model model, ModelBuildingRequest request, ModelProblemCollector problems )
@@ -169,12 +170,12 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
     }
 
     private void validateEffectiveDependencies(ModelProblemCollector problems, List<Dependency> dependencies, boolean management, ModelBuildingRequest request) {
-        Severity errOn30 = getSeverity(request, 30);
+        Severity errOn30 = getSeverity(request, ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_3_0);
         String prefix = management ? "dependencyManagement.dependencies.dependency." : "dependencies.dependency.";
 
         for (Dependency d : dependencies) {
             this.validateEffectiveDependency(problems, d, management, prefix, request);
-            if (request.getValidationLevel() >= 20) {
+            if (request.getValidationLevel() >= ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_2_0) {
                 this.validateBoolean(prefix + "optional", problems, errOn30, d.getOptional(), d.getManagementKey(), d);
                 if (!management) {
                     this.validateVersion(prefix + "version", problems, errOn30, d.getVersion(), d.getManagementKey(), d);
@@ -189,7 +190,7 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
         List<Dependency> dependencies = plugin.getDependencies();
         if (!dependencies.isEmpty()) {
             String prefix = "build.plugins.plugin[" + plugin.getKey() + "].dependencies.dependency.";
-            Severity errOn30 = getSeverity(request, 30);
+            Severity errOn30 = getSeverity(request, ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_3_0);
 
             for (Dependency d : dependencies) {
                 this.validateEffectiveDependency(problems, d, false, prefix, request);
@@ -209,18 +210,18 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
         }
 
         if ("system".equals(d.getScope())) {
-            String i$ = d.getSystemPath();
-            if (StringUtils.isEmpty(i$)) {
+            String systemPath = d.getSystemPath();
+            if (StringUtils.isEmpty(systemPath)) {
                 addViolation(problems, Severity.ERROR, prefix + "systemPath", d.getManagementKey(), "is missing.", d);
             } else {
-                File exclusion = new File(i$);
+                File exclusion = new File(systemPath);
                 if (!exclusion.isAbsolute()) {
-                    addViolation(problems, Severity.ERROR, prefix + "systemPath", d.getManagementKey(), "must specify an absolute path but is " + i$, d);
+                    addViolation(problems, Severity.ERROR, prefix + "systemPath", d.getManagementKey(), "must specify an absolute path but is " + systemPath, d);
                 } else if (!exclusion.isFile()) {
                     String msg = "refers to a non-existing file " + exclusion.getAbsolutePath();
-                    i$ = i$.replace('/', File.separatorChar).replace('\\', File.separatorChar);
+                    systemPath = systemPath.replace('/', File.separatorChar).replace('\\', File.separatorChar);
                     String jdkHome = request.getSystemProperties().getProperty("java.home", "") + File.separator + "..";
-                    if (i$.startsWith(jdkHome)) {
+                    if (systemPath.startsWith(jdkHome)) {
                         msg = msg + ". Please verify that you run Maven using a JDK and not just a JRE.";
                     }
 
@@ -231,7 +232,7 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
             addViolation(problems, Severity.ERROR, prefix + "systemPath", d.getManagementKey(), "must be omitted. This field may only be specified for a dependency with system scope.", d);
         }
 
-        if (request.getValidationLevel() >= 20) {
+        if (request.getValidationLevel() >= ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_2_0) {
 
             for (Exclusion exclusion1 : d.getExclusions()) {
                 this.validateId(prefix + "exclusions.exclusion.groupId", problems, Severity.WARNING, exclusion1.getGroupId(), d.getManagementKey(), exclusion1);
@@ -243,8 +244,8 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
 
     private void validateRepository(ModelProblemCollector problems, Repository repository, String prefix, ModelBuildingRequest request) {
         if (repository != null) {
-            Severity errOn31 = getSeverity(request, 31);
-            this.validateBannedCharacters(prefix + ".id", problems, errOn31, repository.getId(), null, repository, "\\/:\"<>|?*");
+            Severity errOn31 = getSeverity(request, ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_3_1);
+            this.validateBannedCharacters(prefix + ".id", problems, errOn31, repository.getId(), null, repository, ILLEGAL_REPO_ID_CHARS);
             if ("local".equals(repository.getId())) {
                 addViolation(problems, errOn31, prefix + ".id", null, "must not be \'local\', this identifier is reserved for the local repository, using it for other repositories will corrupt your repository metadata.", repository);
             }
@@ -257,7 +258,7 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
     }
 
     private void validateResources(ModelProblemCollector problems, List<Resource> resources, String prefix, ModelBuildingRequest request) {
-        Severity errOn30 = getSeverity(request, 30);
+        Severity errOn30 = getSeverity(request, ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_3_0);
 
         for (Resource resource : resources) {
             this.validateStringNotEmpty(prefix + ".directory", problems, Severity.ERROR, resource.getDirectory(), resource);
@@ -365,7 +366,7 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
     }
 
     private boolean validatePluginVersion(String fieldName, ModelProblemCollector problems, String string, String sourceHint, InputLocationTracker tracker, ModelBuildingRequest request) {
-        Severity errOn30 = getSeverity(request, 30);
+        Severity errOn30 = getSeverity(request, ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_3_0);
         if (string == null) {
             return true;
         } else if (string.length() > 0 && !this.hasExpression(string) && !"RELEASE".equals(string) && !"LATEST".equals(string)) {
@@ -392,13 +393,13 @@ public class FlexMojosCompatibleModelValidator extends DefaultModelValidator {
         if (tracker != null) {
             if (fieldName != null) {
                 java.io.Serializable key = fieldName;
-                int idx = fieldName.lastIndexOf(46);
+                int idx = fieldName.lastIndexOf('.');
                 if (idx >= 0) {
                     key = fieldName = fieldName.substring(idx + 1);
                 }
 
                 if (fieldName.endsWith("]")) {
-                    key = fieldName.substring(fieldName.lastIndexOf(91) + 1, fieldName.length() - 1);
+                    key = fieldName.substring(fieldName.lastIndexOf('[') + 1, fieldName.length() - 1);
 
                     try {
                         key = Integer.valueOf(key.toString());

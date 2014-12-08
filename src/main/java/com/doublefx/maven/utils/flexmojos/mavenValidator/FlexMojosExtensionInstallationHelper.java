@@ -16,14 +16,18 @@ import org.sonatype.aether.util.artifact.DefaultArtifact;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Properties;
 
-/**
- * Created by DoubleFx on 07/12/2014.
- */
 @Component(role = AbstractMavenLifecycleParticipant.class, hint = "mavenExtensionInstallHelper")
 public class FlexMojosExtensionInstallationHelper extends AbstractMavenLifecycleParticipant {
+
+    private static final String GROUP_ID = "com.doublefx.maven.utils.flexmojos";
+    private static final String ARTIFACT_ID = "flexmojos-compatible-model-validator";
+    private static final String MINIMAL_VERSION = "1.0.0-SNAPSHOT";
+
     @Requirement
     private Logger logger;
 
@@ -31,42 +35,81 @@ public class FlexMojosExtensionInstallationHelper extends AbstractMavenLifecycle
     private RepositorySystem repoSystem;
 
     public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
-        copyExtension(session, "com.doublefx.maven.utils.flexmojos:flexmojos-compatible-model-validator:1.0.0-SNAPSHOT");
+        copyExtension(session, GROUP_ID + ":" + ARTIFACT_ID + ":" + getVersion());
     }
 
-    protected void copyExtension(MavenSession session, String artifactCoords) throws MavenExecutionException {
+    protected void copyExtension(MavenSession session, String artifactCoordinates) throws MavenExecutionException {
         Artifact artifact;
         try {
-            artifact = new DefaultArtifact(artifactCoords);
+            artifact = new DefaultArtifact(artifactCoordinates);
         } catch (IllegalArgumentException e) {
             throw newMavenExecutionException(e);
         }
+
         ArtifactRequest request = new ArtifactRequest();
         request.setArtifact(artifact);
+
         final List<RemoteRepository> remoteRepos = session.getCurrentProject().getRemoteProjectRepositories();
+
         request.setRepositories(remoteRepos);
         logger.info("Resolving artifact " + artifact + " from " + remoteRepos);
+
         ArtifactResult result;
         try {
             result = repoSystem.resolveArtifact(session.getRepositorySession(), request);
         } catch (ArtifactResolutionException e) {
             throw newMavenExecutionException(e);
         }
+
         final Artifact resultArtifact = result.getArtifact();
 
         logger.info("Resolved artifact " + artifact + " to " + resultArtifact.getFile() + " from "
                 + result.getRepository());
 
-        final String maven_home = System.getenv("MAVEN_HOME").replace("\\", "/");
-        final File destination = new File(maven_home + "/lib/ext/" + resultArtifact.getArtifactId() + ".jar");
+        final String maven_home = System.getenv("MAVEN_HOME");
+        final File destination = new File(maven_home + File.separator + "lib" + File.separator + "ext" + File.separator + resultArtifact.getArtifactId() + ".jar");
 
         if (!destination.exists()) {
             try {
                 Files.copy(resultArtifact.getFile().toPath(), destination.toPath());
             } catch (IOException ignored) {
             }
-            throw newMavenExecutionException(new Exception(resultArtifact.getArtifactId() + " is now configured, please restart your build."));
+            logger.info(resultArtifact.getArtifactId() + " is now configured, it will be applied to your next builds.");
         }
+    }
+
+    public String getVersion() {
+        String version = null;
+
+        // try to load from maven properties first
+        try {
+            Properties p = new Properties();
+            InputStream is = getClass().getResourceAsStream("/META-INF/maven/" + GROUP_ID + "/" + ARTIFACT_ID + "/pom.properties");
+            if (is != null) {
+                p.load(is);
+                version = p.getProperty("version", "");
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+
+        // fallback to using Java API
+        if (version == null) {
+            Package aPackage = getClass().getPackage();
+            if (aPackage != null) {
+                version = aPackage.getImplementationVersion();
+                if (version == null) {
+                    version = aPackage.getSpecificationVersion();
+                }
+            }
+        }
+
+        if (version == null) {
+            // we could not compute the version so use the minimal one.
+            version = MINIMAL_VERSION;
+        }
+
+        return version;
     }
 
     private static MavenExecutionException newMavenExecutionException(Exception cause) {
