@@ -52,28 +52,28 @@ public class FlexMojosExtensionInstallationHelper extends AbstractMavenLifecycle
         final List<RemoteRepository> remoteRepos = session.getCurrentProject().getRemoteProjectRepositories();
 
         request.setRepositories(remoteRepos);
-        logger.info("Resolving artifact " + artifact + " from " + remoteRepos);
 
         ArtifactResult result;
         try {
             result = repoSystem.resolveArtifact(session.getRepositorySession(), request);
         } catch (ArtifactResolutionException e) {
+            logger.info("Resolving artifact " + artifact + " from " + remoteRepos);
             throw newMavenExecutionException(e);
         }
 
         final Artifact resultArtifact = result.getArtifact();
 
-        logger.info("Resolved artifact " + artifact + " to " + resultArtifact.getFile() + " from "
-                + result.getRepository());
-
         final String maven_home = System.getenv("MAVEN_HOME");
         final File destination = new File(maven_home + File.separator + "lib" + File.separator + "ext" + File.separator + resultArtifact.getArtifactId() + ".jar");
 
         if (!destination.exists()) {
+            logger.info("Resolved artifact " + artifact + " to " + resultArtifact.getFile() + " from "
+                    + result.getRepository());
+
             try {
                 Files.copy(resultArtifact.getFile().toPath(), destination.toPath());
-            } catch (IOException ignored) {
-            }
+            } catch (IOException ignored) {}
+
             logger.info(resultArtifact.getArtifactId() + " is now configured, it will be applied to your next builds.");
         }
     }
