@@ -13,7 +13,7 @@ FlexMojos provides 6 scopes used as linkages for your dependencies:
 <dt><strong>rsl (Runtime Shared Library)</strong></dt>
 <dd>Relevant only for Flex and AIR Applications (not SWCs or ActionScript 3 projects), this ensures that the library referenced by the SWF will be loaded once into the user's Flash Player cache at runtime. This is enabled by default on Flex projects for the framework dependencies (you can use static-link-runtime-shared-libraries on mxmlc to disable it).</dd>
 <dt><strong>caching (Adobe Signed Runtime Shared Library)</strong></dt>
-<dd>Like rsl except those library are signed.</dd>
+<dd>Like rsl except those libraries are signed.</dd>
 <dt><strong>theme</strong></dt>
 <dd>To indicate that dependency is a theme.</dd>
 </dl>
